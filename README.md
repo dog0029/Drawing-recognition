@@ -19,6 +19,16 @@
     - 이미지 파일이 아닌 json 파일로 구성되어 있어 이를 이미지로 변환하는 작업
 
 </br>
+
+### Drawing recognition with Kinect v2
+
+1. Download QuickDraw dataset.
+2. Convert QuickDraw dataset to image.
+3. Training drawing image data with yolov3.
+4. Recognize hand-drawn drawings with Kinect
+
+
+</br>
 </br>
 </br>
 
@@ -28,6 +38,8 @@
 ### 1. https://github.com/googlecreativelab/quickdraw-dataset 참고
 ![quickdraw_logo](https://user-images.githubusercontent.com/42198637/88623215-71938880-d0df-11ea-8ec4-092e8fd24f53.PNG)
 
+</br>
+</br>
 
 ### 2. raw data download
 
@@ -54,89 +66,31 @@
 
 - 다운받은 파일 중 그림 좌표가 저장되어있는 raw만 가져다 썼다.
 
+</br>
+</br>
+
 ### 3. .ndjson to .json 변환
-
 - openFrameworks에서 raw 파일을 다루기 위해서 ndjson 파일을 json으로 변환할 필요가 있다.
-- 코드는 [ndjson-to-json](https://github.com/dog0029/ndjson-to-json) 에 있다.
+- 코드는 [ndjson-to-json](https://github.com/dog0029/ndjson-to-json)에 있다.
 
+</br>
+</br>
 
 ### 4. 이미지 생성
-- 코드는 \\1.Quick Draw\\코드\\그림 데이터셋 구축\\2.json_to_image 에 있다.
-- raw 파일의 그림 양식은 다음과 같다.
-    ```javascript
-    { 
-        "key_id":"5891796615823360",
-        "word":"nose",
-        "countrycode":"AE",
-        "timestamp":"2017-03-01 20:41:36.70725 UTC",
-        "recognized":true,
-        "drawing":[[[129,128,129,129,130,130,131,132,132,133,133,133,133,...]]]
-    }
-    ```
-- 저기서 drawing 항목에 그림 좌표가 저장되어 있다. drawing 포멧은 다음과 같다.
-    ```javascript
-    [ 
-        [  // First stroke 
-            [x0, x1, x2, x3, ...],
-            [y0, y1, y2, y3, ...],
-            [t0, t1, t2, t3, ...]
-        ],
-        [  // Second stroke
-            [x0, x1, x2, x3, ...],
-            [y0, y1, y2, y3, ...],
-            [t0, t1, t2, t3, ...]
-        ],
-        ... // Additional strokes
-    ]
-    ```
-    - 첫번째 대괄호는 그림 단위, 두번째 대괄호는 선단위, 세번째 대괄호는 좌표 단위이다.
-    - x는 x좌표 모음, y는 y좌표 모음으로 각 1대1 매칭하면 된다.
-    - t는 msec 단위로 시작점을 알려준다고 하는데 아직 잘 모르겠다.
-    
-- openFramworks에서 json 파일을 다룰 수 있다.
-    - https://openframeworks.cc/download/ 에서 VS2017로 다운
-    - examples\input_output\jsonExample 에서 확인 가능
-    - json 예제 소스 코드
-    ```cpp
-    ofJson js;
-    ofFile file("drawing.json");
-	if(file.exists())
-	{
-	    file >> js;
-	    for(auto & stroke: js)
-	    {
-	        if(!stroke.empty())
-	        {
-                // 다음 점으로 이동
-		        path.moveTo(stroke[0]["x"], stroke[0]["y"]);
-		        for(auto & p: stroke)
-		        {
-                    // 이전 점에서 해당 점까지 직선을 그림
-		        	path.lineTo(p["x"], p["y"]);
-		        }
-		    }
-	    }
-    }
-    ```
-    - ofJson에 파일을 넣으면 for문으로 json 괄호 안에 접근이 가능하다.
-    - moveTo로 다음 점으로 이동하고 lineTo는 다음 점까지 직선을 그린다.
-        - 그림을 그릴 때 선의 시작점은 moveTo로 하고 나머지(해당 선의 끝점까지)는 lineTo를 적용한다.
-        - 그리고 다음 선의 시작점은 moveTo로 하며 반복한다.
+- json 파일로 변환 후 이미지 파일로 변환한다.
+- 코드는 [coordinate-to-image](https://github.com/dog0029/coordinate-to-image)에 있다.
+- openFrameworks 0.11.0, visual studio 2017을 이용한다.
 
-- 생성된 이미지 예시
-
-    ![quickdraw_apple](https://user-images.githubusercontent.com/42198637/88624561-2c248a80-d0e2-11ea-8a5f-8ab01d6929a6.PNG)
-
+</br>
+</br>
 
 ### 5. 데이터셋 구축
 
-- yolo 학습 데이터셋 
+- yolov3 학습 데이터셋 
 1. json 파일에 저장된 좌표 정보를 가지고 그림 이미지 만들기
 2. 각 이미지에 대한 바운딩 박스 txt 파일 만들기(1대1 대응)
 3. train 데이터와 valid 데이터로 구분하기(valid는 클래스 별 25000장의 이미지로 구성)
 4. 이미지 경로 리스트 txt 파일 만들기
-
-> 인수인계 백업에는 용량 문제로 인해 .ndjson 파일만 넣음
 
 </br>
 </br>
@@ -146,7 +100,7 @@
 ## 학습
 
 ### 1. yolov3 학습
-
+- [darknet](https://github.com/AlexeyAB/darknet)을 이용하여 yolov3 빌드
 - <del>배경제거된 이미지로 학습</del> 
     - loss가 0.7 밑으로 떨어지지 않음
     - 테스트 하였을 때 전혀 클래스 분류가 되지 않음
@@ -229,7 +183,9 @@
         -  이후 opencv를 통해 이미지를 반전시켰다.
             - 참고 : https://forum.openframeworks.cc/t/invert-image-with-ofxtoggle-doesnt-work/31202
 
-        
+</br>
+</br>
+
 ### 2. yolov3 네트워크 추가
 
 - opencv는 openframeworks에 내장되어있는 라이브러리를 사용하고 yolo는 darknet에서 빌드된 dll을 사용하였다.
@@ -249,6 +205,9 @@
 	    tmps.load("image/calculater.PNG");
         cv::Mat images = ofxCv::toCv(tmps);
         ```
+
+</br>
+</br>
 
 ### 3. 인식 결과 표출
 
