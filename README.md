@@ -212,5 +212,7 @@
 ### 3. 인식 결과 표출
 
 - yolov3를 통해 인식된 결과를 화면에 출력한다.
+<!--
 - 프로그램 흐름도
 ![quickdraw_flow](https://user-images.githubusercontent.com/42198637/91810470-e28f0880-ec68-11ea-805b-3dba844500c5.PNG)
+-->
